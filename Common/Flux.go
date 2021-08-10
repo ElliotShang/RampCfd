@@ -18,6 +18,41 @@ type PrimtiveFlux struct {
 	Pressure  float64
 }
 
+// 对流通量对象
+type ConvectiveFlux struct {
+	ConvFlux1 float64 // rho*V
+	ConvFlux2 float64 // rho*u*V+nx*p
+	ConvFlux3 float64 // rho*v*V+ny*p
+	ConvFlux4 float64 // rho*H*V
+}
+
+func (flux ConvectiveFlux) ScalarMultiFlux(scalar float64) ConvectiveFlux {
+	var res ConvectiveFlux
+	res = ConvectiveFlux{ConvFlux1: scalar * flux.ConvFlux1, ConvFlux2: scalar * flux.ConvFlux2, ConvFlux3: scalar * flux.ConvFlux3, ConvFlux4: scalar * flux.ConvFlux4}
+	return res
+}
+
+func (flux ConvectiveFlux) FluxMinus(flux1 ConvectiveFlux) ConvectiveFlux {
+	var res ConvectiveFlux
+	res = ConvectiveFlux{ConvFlux1: flux.ConvFlux1 - flux.ConvFlux1, ConvFlux2: flux.ConvFlux2 - flux1.ConvFlux2,
+		ConvFlux3: flux.ConvFlux3 - flux1.ConvFlux3, ConvFlux4: flux.ConvFlux4 - flux1.ConvFlux4}
+	return res
+}
+
+func (flux ConvectiveFlux) FluxPlus(flux1 ConvectiveFlux) ConvectiveFlux {
+	var res ConvectiveFlux
+	res = ConvectiveFlux{ConvFlux1: flux.ConvFlux1 + flux.ConvFlux1, ConvFlux2: flux.ConvFlux2 + flux1.ConvFlux2,
+		ConvFlux3: flux.ConvFlux3 + flux1.ConvFlux3, ConvFlux4: flux.ConvFlux4 + flux1.ConvFlux4}
+	return res
+}
+
+// 用于更新解，守恒性变量减对流通量
+func (flux Flux) FluxMinusConvc(flux1 ConvectiveFlux) Flux {
+	var res Flux
+	res = Flux{Density: flux.Density - flux1.ConvFlux1, MomX: flux.MomX - flux1.ConvFlux2, MomY: flux.MomY - flux1.ConvFlux3, Energy: flux.Energy - flux1.ConvFlux4}
+	return res
+}
+
 func (flux Flux) Conv2Prim(gamma float64) PrimtiveFlux {
 	density := flux.Density
 	momX := flux.MomX
@@ -76,24 +111,44 @@ func (flux PrimtiveFlux) ScalarMultiFlux(saclar float64) PrimtiveFlux {
 // 作为限制器分母，相减的同时确保分母不为0
 func (flux PrimtiveFlux) FluxMinDenominator(flux1 PrimtiveFlux) PrimtiveFlux {
 	var res PrimtiveFlux
-	epsilon := 1.0e-12
+	epsilon := 1.0e-6
+	var signdensitydiff float64
 	densitydiff := flux.Density - flux1.Density
-	signdensitydiff := epsilon * densitydiff / (math.Abs(densitydiff))
+	if densitydiff < 0 {
+		signdensitydiff = -1.0 * epsilon
+	} else {
+		signdensitydiff = epsilon
+	}
 	if math.Abs(densitydiff) < epsilon {
 		densitydiff = signdensitydiff
 	}
 	velocityXdiff := flux.VelocityX - flux1.VelocityX
-	signvelodiff := epsilon * velocityXdiff / (math.Abs(velocityXdiff))
+	var signvelodiff float64
+	if velocityXdiff < 0 {
+		signvelodiff = -1.0 * epsilon
+	} else {
+		signvelodiff = epsilon
+	}
 	if math.Abs(velocityXdiff) < epsilon {
 		velocityXdiff = signvelodiff
 	}
 	velocityYdiff := flux.VelocityY - flux1.VelocityY
-	signvloydiff := epsilon * velocityYdiff / (math.Abs(velocityYdiff))
+	var signvloydiff float64
+	if velocityXdiff < 0 {
+		signvloydiff = -1.0 * epsilon
+	} else {
+		signvloydiff = epsilon
+	}
 	if math.Abs(velocityYdiff) < epsilon {
 		velocityYdiff = signvloydiff
 	}
 	pressurediff := flux.Pressure - flux1.Pressure
-	signpressureDiff := epsilon * pressurediff / (math.Abs(pressurediff))
+	var signpressureDiff float64
+	if velocityXdiff < 0 {
+		signpressureDiff = -1.0 * epsilon
+	} else {
+		signpressureDiff = epsilon
+	}
 	if math.Abs(pressurediff) < epsilon {
 		pressurediff = signpressureDiff
 	}
@@ -123,6 +178,7 @@ func (flux PrimtiveFlux) FluxDivision(flux1 PrimtiveFlux) PrimtiveFlux {
 // limiter计算函数
 // 入参：已经计算得到的r. 返回：phi(r)
 func LimiterFun(flux PrimtiveFlux) PrimtiveFlux {
+	// min-mod
 	var res PrimtiveFlux
 	mindensityR := flux.Density
 	minvelocityxR := flux.VelocityX
@@ -135,11 +191,30 @@ func LimiterFun(flux PrimtiveFlux) PrimtiveFlux {
 	return res
 }
 
+// 计算总能
 func TotalEnergy(pr PrimtiveFlux, gamma float64) float64 {
 	density := pr.Density
 	velocityX := pr.VelocityX
 	velocityY := pr.VelocityY
 	pressure := pr.Pressure
-	totale := (gamma/(gamma-1.0))*(pressure/density) + 0.5*(velocityX*velocityX+velocityY*velocityY)
+	totale := (1.0/(gamma-1.0))*(pressure/density) + 0.5*(velocityX*velocityX+velocityY*velocityY)
 	return totale
+}
+
+// 计算当地声速
+func SoundSpeed(pr PrimtiveFlux, gamma float64) float64 {
+	dens := pr.Density
+	pres := pr.Pressure
+	c := math.Sqrt(gamma * pres / dens)
+	return c
+}
+
+// 计算总焓
+func TotalEnthalpy(pr PrimtiveFlux, gamma float64) float64 {
+	dens := pr.Density
+	velocityX := pr.VelocityX
+	velocityY := pr.VelocityY
+	press := pr.Pressure
+
+	return (gamma/(gamma-1.0))*(press/dens) + 0.5*(velocityX*velocityX+velocityY*velocityY)
 }

@@ -17,29 +17,25 @@ type Node struct {
 }
 
 // 定义方向向量,单元切向
-type vectorX struct {
-	x float64
-	y float64
-}
-
-func (vec vectorX) GetVectorXX() float64 {
-	return vec.x
-}
-
-func (vec vectorX) GetVectorXY() float64 {
-	return vec.y
+type Vector struct {
+	X float64
+	Y float64
 }
 
 // 方向向量，单元法向
-type vectorY struct {
-	x float64
-	y float64
+type VectorY struct {
+	X float64
+	Y float64
 }
 
-func (vec vectorY) GetVectorYX() float64 {
-	return vec.x
+func (vec VectorY) GetVectorYX() float64 {
+	return vec.X
 }
 
-func (vec vectorY) GetVectorYY() float64 {
-	return vec.y
+func (vec *VectorY) SetVectorYX(x float64) {
+	vec.X = x
+}
+
+func (vec VectorY) GetVectorYY() float64 {
+	return vec.X
 }
