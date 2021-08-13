@@ -20,17 +20,17 @@ func main() {
 	const re float64 = 1.2
 	const rh float64 = 0.2
 	// 网格参数
-	const Nx int = 400
-	const Ny int = 100
+	const Nx int = 500
+	const Ny int = 160
 	const Ng int = 2
 	// 求解过程控制参数
-	const Niter int = 500           // 最大迭代次数
+	const Niter int = 150000        // 最大迭代次数
 	const gamma float64 = 1.4       // 气体常数
 	const kappa float64 = -1        // MUSCL重构全上风格式
 	const converCirt float64 = 1e-6 // 残差收敛准则
-	const Ma float64 = 0.0          // 马赫数
+	const Ma float64 = 2.0          // 马赫数
 	const Density float64 = 1.4     // 无量纲密度
-	const Pressure float64 = 1.0    // 无量纲压力
+	const Pressure float64 = 1      // 无量纲压力
 	const cfl float64 = 0.1         // cfl数
 	const order float64 = 2.0       // 重构器参数
 	Ramp := Geometry.InitGeometry(Xl, Xr, Yb, Yt, rb, re, rh)
@@ -91,7 +91,7 @@ func main() {
 	}
 	defer f.Close()
 	for i := range xlocation {
-		fmt.Fprintf(f, "%.*e, %.*e, %.*e, %.*e\n", 4, xlocation[i], 4, ylocation[i], 5, density[i], 5, pressure[i])
+		fmt.Fprintf(f, "%.*e, %.*e, %f, %f\n", 4, xlocation[i], 4, ylocation[i], density[i], pressure[i])
 	}
 
 }

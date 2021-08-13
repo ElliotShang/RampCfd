@@ -63,7 +63,7 @@ func InitSpaceMesh(Nx int, Ny int, NG int, geo *Geometry.Ramp) *SpaceMesh {
 	// 生成网格节点位置 进出口边界单元中心定义在边界上，含虚拟单元节点
 	for i := 0; i < Nx+2*NG+1; i++ {
 		for j := 0; j < Ny+2*NG+1; j++ {
-			if i < int(horizon_ratio1*float64(Nx))+NG {
+			if i <= int(horizon_ratio1*float64(Nx))+NG {
 				dx := length / float64(Nx)
 				dy := (geo.GetYtop() - geo.GetYbottom()) / float64(Ny)
 				xi := geo.GetXleft() + float64(i)*dx - dx*float64(NG)

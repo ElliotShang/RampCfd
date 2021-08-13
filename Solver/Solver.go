@@ -172,9 +172,9 @@ func (solver *Solver) UpdateSolution(gamma float64) string {
 			tempFlux := common.PrimtiveFlux{Density: solver.mesh.Mesh[i+NG][j+NG].Density, VelocityX: solver.mesh.Mesh[i+NG][j+NG].VelocityX,
 				VelocityY: solver.mesh.Mesh[i+NG][j+NG].VelocityY, Pressure: solver.mesh.Mesh[i+NG][j+NG].Pressure}
 			convser_temp := tempFlux.Prim2Conv(solver.gamma)
-			temp1 := solver.Residual[i][j].ScalarMultiFlux(solver.dt[i][j])
-			temp2 := temp1.ScalarMultiFlux(1.0 / solver.mesh.Area[i+NG][j+NG])
-			convser_temp1 := convser_temp.FluxMinusConvc(temp2)
+			temp1 := solver.Residual[i][j].ScalarMultiFlux(0.008)
+			// temp2 := temp1.ScalarMultiFlux(1.0 / solver.mesh.Area[i+NG][j+NG])
+			convser_temp1 := convser_temp.FluxMinusConvc(temp1)
 			tempPr := convser_temp1.Conv2Prim(solver.gamma)
 			solver.mesh.Mesh[i+NG][j+NG].Density = tempPr.Density
 			solver.mesh.Mesh[i+NG][j+NG].VelocityX = tempPr.VelocityX
@@ -183,8 +183,11 @@ func (solver *Solver) UpdateSolution(gamma float64) string {
 			if math.IsNaN(solver.mesh.Mesh[i+NG][j+NG].Density) || math.IsNaN(solver.mesh.Mesh[i+NG][j+NG].Pressure) || math.IsNaN(solver.mesh.Mesh[i+NG][j+NG].VelocityX) || math.IsNaN(solver.mesh.Mesh[i+NG][j+NG].VelocityY) {
 				return fmt.Sprintf("解更新阶段，网格位置为(%d,%d)", i, j)
 			}
-			if solver.mesh.Mesh[i+NG][j+NG].Pressure < 0 || solver.mesh.Mesh[i+NG][j+NG].Density < 0 {
-				return fmt.Sprintf("解更新阶段,压力/密度小于零，网格位置为(%d,%d)", i, j)
+			if solver.mesh.Mesh[i+NG][j+NG].Pressure <= 0 {
+				return fmt.Sprintf("解更新阶段,压力小于零，网格位置为(%d,%d)", i, j)
+			}
+			if solver.mesh.Mesh[i+NG][j+NG].Density <= 0 {
+				return fmt.Sprintf("解更新阶段,压力小于零，网格位置为(%d,%d)", i, j)
 			}
 		}
 

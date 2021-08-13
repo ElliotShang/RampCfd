@@ -5,6 +5,7 @@ import (
 	"math"
 
 	common "git.oa.com/hengrushang/RampCfd/Common"
+	muscl "git.oa.com/hengrushang/RampCfd/MUSCL"
 )
 
 // roe平均变量
@@ -14,6 +15,7 @@ type RoeAvarageFlux struct {
 	VelocityYbar float64
 	Hbar         float64
 	Cbar         float64
+	Unbar        float64
 }
 
 // Roe求解器对象 继承通用求解器接口
@@ -29,16 +31,16 @@ func (solver *Roe) UpdateFlux(kappa float64, order float64) string {
 	for i := 0; i < Nx+1; i++ {
 		for j := 0; j < Ny; j++ {
 			// muscl 插值重构Vl,Vr
-			//Vl, Vr := muscl.Muscl(kappa, order, i, j, solver.mesh, solver.PositiveXlimiters[i][j],
-			//	solver.NegativeXlimiters[i][j], solver.PositiveXlimiters[i+1][j], solver.NegativeXlimiters[i+1][j], 'x', solver.gamma)
+			Vl, Vr := muscl.Muscl(kappa, order, i, j, solver.mesh, solver.PositiveXlimiters[i][j],
+				solver.NegativeXlimiters[i][j], solver.PositiveXlimiters[i+1][j], solver.NegativeXlimiters[i+1][j], 'x', solver.gamma)
 			// 均量
-			Vl := common.PrimtiveFlux{Density: solver.mesh.Mesh[i+Ng-1][j+Ng].Density, VelocityX: solver.mesh.Mesh[i+Ng-1][j+Ng].VelocityX,
-				VelocityY: solver.mesh.Mesh[i+Ng-1][j+Ng].VelocityY, Pressure: solver.mesh.Mesh[i+Ng-1][j+Ng].Pressure}
-			Vr := common.PrimtiveFlux{Density: solver.mesh.Mesh[i+Ng][j+Ng].Density, VelocityX: solver.mesh.Mesh[i+Ng][j+Ng].VelocityX,
-				VelocityY: solver.mesh.Mesh[i+Ng][j+Ng].VelocityY, Pressure: solver.mesh.Mesh[i+Ng][j+Ng].Pressure}
+			//Vl := common.PrimtiveFlux{Density: solver.mesh.Mesh[i+Ng-1][j+Ng].Density, VelocityX: solver.mesh.Mesh[i+Ng-1][j+Ng].VelocityX,
+			//	VelocityY: solver.mesh.Mesh[i+Ng-1][j+Ng].VelocityY, Pressure: solver.mesh.Mesh[i+Ng-1][j+Ng].Pressure}
+			//Vr := common.PrimtiveFlux{Density: solver.mesh.Mesh[i+Ng][j+Ng].Density, VelocityX: solver.mesh.Mesh[i+Ng][j+Ng].VelocityX,
+			//	VelocityY: solver.mesh.Mesh[i+Ng][j+Ng].VelocityY, Pressure: solver.mesh.Mesh[i+Ng][j+Ng].Pressure}
 			CenterFlux := CenterCFlux(Vl, Vr, solver.mesh.VectorX[i+Ng][j+Ng], solver.gamma)
 			MatrixFlux := MatrixConFlux(Vl, Vr, solver.mesh.VectorX[i+Ng][j+Ng], solver.gamma)
-
+			/**
 			if i == 159 && j == 0 {
 				fmt.Println("通量", CenterFlux, MatrixFlux)
 				fmt.Println("Roe特征值", RoeValue(Vl, Vr, 1.4))
@@ -47,7 +49,7 @@ func (solver *Roe) UpdateFlux(kappa float64, order float64) string {
 				fmt.Println("Eign vector", RightEignVec(RoeValue(Vl, Vr, 1.4), solver.mesh.VectorX[i+Ng][j+Ng]))
 				fmt.Println("vectorX", solver.mesh.VectorX[i+Ng][j+Ng])
 			}
-
+			**/
 			solver.FluxX[i][j] = CenterFlux.FluxMinus(MatrixFlux)
 			if math.IsNaN(solver.FluxX[i][j].ConvFlux1) || math.IsNaN(solver.FluxX[i][j].ConvFlux2) || math.IsNaN(solver.FluxX[i][j].ConvFlux3) || math.IsNaN(solver.FluxX[i][j].ConvFlux4) {
 				return fmt.Sprintf("解更新，x方向(%d,%d)", i, j)
@@ -65,7 +67,7 @@ func (solver *Roe) UpdateFlux(kappa float64, order float64) string {
 				VelocityY: solver.mesh.Mesh[i+Ng][j+Ng].VelocityY, Pressure: solver.mesh.Mesh[i+Ng][j+Ng].Pressure}
 			CenterFlux := CenterCFlux(Vl, Vr, solver.mesh.VectorY[i+Ng][j+Ng], solver.gamma)
 			MatrixFlux := MatrixConFlux(Vl, Vr, solver.mesh.VectorY[i+Ng][j+Ng], solver.gamma)
-
+			/**
 			if i == 159 && j == 0 {
 				fmt.Println("通量", CenterFlux, MatrixFlux)
 				fmt.Println("Roe特征值", RoeValue(Vl, Vr, 1.4))
@@ -74,7 +76,7 @@ func (solver *Roe) UpdateFlux(kappa float64, order float64) string {
 				fmt.Println("Eign vector", RightEignVec(RoeValue(Vl, Vr, 1.4), solver.mesh.VectorY[i+Ng][j+Ng]))
 				fmt.Println("vectorX", solver.mesh.VectorY[i+Ng][j+Ng])
 			}
-
+			**/
 			solver.FluxY[i][j] = CenterFlux.FluxMinus(MatrixFlux)
 			if math.IsNaN(solver.FluxY[i][j].ConvFlux1) || math.IsNaN(solver.FluxY[i][j].ConvFlux2) || math.IsNaN(solver.FluxY[i][j].ConvFlux3) || math.IsNaN(solver.FluxY[i][j].ConvFlux4) {
 				return fmt.Sprintf("解更新，y方向(%d,%d)", i, j)
@@ -90,25 +92,28 @@ func (solver *Roe) UpdateFlux(kappa float64, order float64) string {
 func Harten(lambda float64, roe_ss float64) float64 {
 	error := 0.25
 	if math.Abs(lambda) <= error {
-		lamba_mag := (math.Pow(lambda, 2) + error*error) / (2.0 * error)
+		lamba_mag := (lambda*lambda + error*error) / (2.0 * error)
 		return lamba_mag
 	}
 	return math.Abs(lambda)
 }
 
 // 计算Roe均值变量
-func RoeValue(Vl common.PrimtiveFlux, Vr common.PrimtiveFlux, gamma float64) RoeAvarageFlux {
+func RoeValue(Vl common.PrimtiveFlux, Vr common.PrimtiveFlux, gamma float64, n common.Vector) RoeAvarageFlux {
 	var RoeAve RoeAvarageFlux
 	var vel_mag float64
 	ht_l := common.TotalEnthalpy(Vl, gamma)
 	ht_r := common.TotalEnthalpy(Vr, gamma)
 	r := math.Sqrt(Vr.Density / Vl.Density)
+	Un_l := Vl.VelocityX*n.X + Vl.VelocityY*n.Y
+	Un_r := Vr.VelocityX*n.X + Vr.VelocityY*n.Y
 	RoeAve.Densitybar = r * Vl.Density
 	RoeAve.VelocityXbar = (r*Vr.VelocityX + Vl.VelocityX) / (r + 1.0)
 	RoeAve.VelocityYbar = (r*Vr.VelocityY + Vl.VelocityY) / (r + 1.0)
 	RoeAve.Hbar = (r*ht_r + ht_l) / (r + 1.0)
 	vel_mag = (RoeAve.VelocityXbar*RoeAve.VelocityXbar + RoeAve.VelocityYbar*RoeAve.VelocityYbar)
 	c := (gamma - 1.0) * (RoeAve.Hbar - 0.5*vel_mag)
+	RoeAve.Unbar = (Un_l*math.Sqrt(Vl.Density) + Un_r*math.Sqrt(Vr.Density)) / (math.Sqrt(Vl.Density) + math.Sqrt(Vr.Density))
 	RoeAve.Cbar = math.Sqrt(c)
 	return RoeAve
 }
@@ -116,10 +121,8 @@ func RoeValue(Vl common.PrimtiveFlux, Vr common.PrimtiveFlux, gamma float64) Roe
 // 计算Roe平均量特征值
 func EignValue(Roeave RoeAvarageFlux, n common.Vector) []float64 {
 	lambda := make([]float64, 4)
-	roe_xval := Roeave.VelocityXbar
-	roe_yval := Roeave.VelocityYbar
 	roe_c := Roeave.Cbar
-	Un := roe_xval*n.X + roe_yval*n.Y
+	Un := Roeave.Unbar
 	lambda[0] = Harten(Un, roe_c)
 	lambda[1] = lambda[0]
 	lambda[2] = Harten((Un + roe_c), roe_c)
@@ -152,7 +155,7 @@ func MatrixConFlux(Vl common.PrimtiveFlux, Vr common.PrimtiveFlux, n common.Vect
 	var WaveFlux common.ConvectiveFlux
 	var dw []float64
 	Cflux := make([]float64, 4)
-	Roevalue := RoeValue(Vl, Vr, gamma)
+	Roevalue := RoeValue(Vl, Vr, gamma, n)
 	lambda := EignValue(Roevalue, n)
 	RightEign := RightEignVec(Roevalue, n)
 	dw = Amplitude(Vl, Vr, Roevalue, n)

@@ -34,14 +34,14 @@ func (flux ConvectiveFlux) ScalarMultiFlux(scalar float64) ConvectiveFlux {
 
 func (flux ConvectiveFlux) FluxMinus(flux1 ConvectiveFlux) ConvectiveFlux {
 	var res ConvectiveFlux
-	res = ConvectiveFlux{ConvFlux1: flux.ConvFlux1 - flux.ConvFlux1, ConvFlux2: flux.ConvFlux2 - flux1.ConvFlux2,
+	res = ConvectiveFlux{ConvFlux1: flux.ConvFlux1 - flux1.ConvFlux1, ConvFlux2: flux.ConvFlux2 - flux1.ConvFlux2,
 		ConvFlux3: flux.ConvFlux3 - flux1.ConvFlux3, ConvFlux4: flux.ConvFlux4 - flux1.ConvFlux4}
 	return res
 }
 
 func (flux ConvectiveFlux) FluxPlus(flux1 ConvectiveFlux) ConvectiveFlux {
 	var res ConvectiveFlux
-	res = ConvectiveFlux{ConvFlux1: flux.ConvFlux1 + flux.ConvFlux1, ConvFlux2: flux.ConvFlux2 + flux1.ConvFlux2,
+	res = ConvectiveFlux{ConvFlux1: flux.ConvFlux1 + flux1.ConvFlux1, ConvFlux2: flux.ConvFlux2 + flux1.ConvFlux2,
 		ConvFlux3: flux.ConvFlux3 + flux1.ConvFlux3, ConvFlux4: flux.ConvFlux4 + flux1.ConvFlux4}
 	return res
 }
