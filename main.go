@@ -33,7 +33,7 @@ func main() {
 	const Density float64 = 0.53      // 无量纲密度
 	const Pressure float64 = 31836.15 // 无量纲压力
 	const cfl float64 = 0.4           // cfl数
-	const order float64 = 1.0         // 重构器参数
+	const order float64 = 1.0         // 重构器参数 order=1 一阶精度，order=2 二阶精度
 	Ramp := Geometry.InitGeometry(Xl, Xr, Yb, Yt, rb, re, rh)
 	SpaceMesh := common.InitSpaceMesh(Nx, Ny, Ng, &Ramp)
 	ProtoSolver := Solver.SolverInitlize(SpaceMesh, gamma)
