@@ -105,18 +105,18 @@ func (solver *Solver) UpdateBC() string {
 // 更新限制器
 func (solver *Solver) UpdateLimiter() {
 	Nx := solver.mesh.Nx
-	Ng := solver.mesh.NG
+	//Ng := solver.mesh.NG
 	Ny := solver.mesh.Ny
 	//更新x方向限制器
-	for i := 0; i < Nx+Ng; i++ {
-		for j := 0; j < Ny; j++ {
+	for i := 2; i < Nx; i++ {
+		for j := 2; j < Ny-1; j++ {
 			solver.PositiveXlimiters[i][j] = muscl.LimiterCalcX(solver.mesh, i, j, '+')
 			solver.NegativeXlimiters[i][j] = muscl.LimiterCalcX(solver.mesh, i, j, '-')
 		}
 	}
 	//更新y方向限制器
-	for i := 0; i < Nx; i++ {
-		for j := 0; j < Ny+Ng; j++ {
+	for i := 2; i < Nx-1; i++ {
+		for j := 2; j < Ny; j++ {
 			solver.PositiveYlimiters[i][j] = muscl.LimiterCalcY(solver.mesh, i, j, '+')
 			solver.NegativeYlimiters[i][j] = muscl.LimiterCalcY(solver.mesh, i, j, '-')
 		}
@@ -150,8 +150,8 @@ func (solver *Solver) UpdateResidual() string {
 			}
 		}
 	}
+	//fmt.Println("残差单元", solver.Residual[163][0])
 	return ""
-	// fmt.Println("残差单元", solver.Residual[50][50])
 }
 
 // 更新时间步长
@@ -172,7 +172,7 @@ func (solver *Solver) UpdateSolution(gamma float64) string {
 			tempFlux := common.PrimtiveFlux{Density: solver.mesh.Mesh[i+NG][j+NG].Density, VelocityX: solver.mesh.Mesh[i+NG][j+NG].VelocityX,
 				VelocityY: solver.mesh.Mesh[i+NG][j+NG].VelocityY, Pressure: solver.mesh.Mesh[i+NG][j+NG].Pressure}
 			convser_temp := tempFlux.Prim2Conv(solver.gamma)
-			temp1 := solver.Residual[i][j].ScalarMultiFlux(0.008)
+			temp1 := solver.Residual[i][j].ScalarMultiFlux(solver.dt[i][j])
 			// temp2 := temp1.ScalarMultiFlux(1.0 / solver.mesh.Area[i+NG][j+NG])
 			convser_temp1 := convser_temp.FluxMinusConvc(temp1)
 			tempPr := convser_temp1.Conv2Prim(solver.gamma)

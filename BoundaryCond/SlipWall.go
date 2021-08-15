@@ -14,11 +14,10 @@ func SlipWall(mesh *common.SpaceMesh) string {
 	for i := mesh.NG; i < mesh.NG+mesh.Nx; i++ {
 		xn := mesh.VectorY[i][mesh.NG].X
 		yn := mesh.VectorY[i][mesh.NG].Y
-		a := xn*xn - yn*yn
-		b := 2.0 * xn * yn
 		for j := 0; j < mesh.NG; j++ {
-			mesh.Mesh[i][j].VelocityX = a*mesh.Mesh[i][mesh.NG].VelocityX - b*mesh.Mesh[i][mesh.NG].VelocityY
-			mesh.Mesh[i][j].VelocityY = -b*mesh.Mesh[i][mesh.NG].VelocityX + a*mesh.Mesh[i][mesh.NG].VelocityY
+			velocityNorm := xn*mesh.Mesh[i][mesh.NG].VelocityX + yn*mesh.Mesh[i][mesh.NG].VelocityY
+			mesh.Mesh[i][j].VelocityX = mesh.Mesh[i][mesh.NG].VelocityX - 2.0*velocityNorm*xn
+			mesh.Mesh[i][j].VelocityY = mesh.Mesh[i][mesh.NG].VelocityY - 2.0*velocityNorm*yn
 			mesh.Mesh[i][j].Density = mesh.Mesh[i][mesh.NG].Density
 			mesh.Mesh[i][j].Pressure = mesh.Mesh[i][mesh.NG].Pressure
 			if math.IsNaN(mesh.Mesh[i][j].Density) || math.IsNaN(mesh.Mesh[i][j].Pressure) || math.IsNaN(mesh.Mesh[i][j].VelocityX) || math.IsNaN(mesh.Mesh[i][j].VelocityY) {
@@ -30,11 +29,10 @@ func SlipWall(mesh *common.SpaceMesh) string {
 	for i := mesh.NG; i < mesh.NG+mesh.Nx; i++ {
 		xn := mesh.VectorY[i][mesh.NG+mesh.Ny].X
 		yn := mesh.VectorY[i][mesh.NG+mesh.Ny].Y
-		a := xn*xn - yn*yn
-		b := 2.0 * xn * yn
+		velocityNorm := xn*mesh.Mesh[i][mesh.NG+mesh.Ny-1].VelocityX + yn*mesh.Mesh[i][mesh.NG+mesh.Ny-1].VelocityY
 		for j := 0; j < mesh.NG; j++ {
-			mesh.Mesh[i][mesh.NG+mesh.Ny+j].VelocityX = a*mesh.Mesh[i][mesh.NG+mesh.Ny-1].VelocityX - b*mesh.Mesh[i][mesh.NG+mesh.Ny-1].VelocityY
-			mesh.Mesh[i][mesh.NG+mesh.Ny+j].VelocityY = -b*mesh.Mesh[i][mesh.NG+mesh.Ny-1].VelocityX + a*mesh.Mesh[i][mesh.NG+mesh.Ny-1].VelocityY
+			mesh.Mesh[i][mesh.NG+mesh.Ny+j].VelocityX = mesh.Mesh[i][mesh.NG+mesh.Ny-1].VelocityX - 2.0*velocityNorm*xn
+			mesh.Mesh[i][mesh.NG+mesh.Ny+j].VelocityY = mesh.Mesh[i][mesh.NG+mesh.Ny-1].VelocityY - 2.0*velocityNorm*yn
 			mesh.Mesh[i][j+mesh.NG+mesh.Ny].Density = mesh.Mesh[i][mesh.NG+mesh.Ny-1].Density
 			mesh.Mesh[i][j+mesh.NG+mesh.Ny].Pressure = mesh.Mesh[i][mesh.NG+mesh.Ny-1].Pressure
 			if math.IsNaN(mesh.Mesh[i][j].Density) || math.IsNaN(mesh.Mesh[i][j].Pressure) || math.IsNaN(mesh.Mesh[i][j].VelocityX) || math.IsNaN(mesh.Mesh[i][j].VelocityY) {

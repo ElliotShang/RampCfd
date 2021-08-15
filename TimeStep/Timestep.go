@@ -28,20 +28,20 @@ func CalculateTimestep(mesh *common.SpaceMesh, cfl float64, gamma float64) ([][]
 			avg_xnormal.Y = 0.5 * (mesh.VectorX[i+NG][j+NG].Y + mesh.VectorX[i+1+NG][j+NG].Y)
 			avg_ynormal.X = 0.5 * (mesh.VectorY[i+NG][j+NG].X + mesh.VectorY[i+NG][j+1+NG].X)
 			avg_ynormal.Y = 0.5 * (mesh.VectorY[i+NG][j+NG].Y + mesh.VectorY[i+NG][j+1+NG].Y)
-			//xlambda := MaxEignvalue(mesh, i+NG, j+NG, avg_xnormal, gamma)
-			//ylambda := MaxEignvalue(mesh, i+NG, j+NG, avg_ynormal, gamma)
+			xlambda := MaxEignvalue(mesh, i+NG, j+NG, avg_xnormal, gamma)
+			ylambda := MaxEignvalue(mesh, i+NG, j+NG, avg_ynormal, gamma)
 			// 计算当地时间步长
-			un := avg_xnormal.X*mesh.Mesh[i][j].VelocityX + avg_xnormal.Y*mesh.Mesh[i][j].VelocityY
-			vn := avg_ynormal.X*mesh.Mesh[i][j].VelocityX + avg_ynormal.Y*mesh.Mesh[i][j].VelocityY
-			//dneum := xlambda*avg_lengthx + ylambda*avg_lengthy
-			flux := common.PrimtiveFlux{Density: mesh.Mesh[i+NG][j+NG].Density, VelocityX: mesh.Mesh[i+NG][j+NG].VelocityX,
-				VelocityY: mesh.Mesh[i+NG][j+NG].VelocityY, Pressure: mesh.Mesh[i+NG][j+NG].Pressure}
-			c := common.SoundSpeed(flux, gamma)
-			dneum := c*(avg_lengthx+avg_lengthy) + math.Abs(un) + math.Abs(vn)
+			//un := avg_xnormal.X*mesh.Mesh[i][j].VelocityX + avg_xnormal.Y*mesh.Mesh[i][j].VelocityY
+			//vn := avg_ynormal.X*mesh.Mesh[i][j].VelocityX + avg_ynormal.Y*mesh.Mesh[i][j].VelocityY
+			dneum := xlambda*avg_lengthx + ylambda*avg_lengthy
+			//flux := common.PrimtiveFlux{Density: mesh.Mesh[i+NG][j+NG].Density, VelocityX: mesh.Mesh[i+NG][j+NG].VelocityX,
+			//	VelocityY: mesh.Mesh[i+NG][j+NG].VelocityY, Pressure: mesh.Mesh[i+NG][j+NG].Pressure}
+			//c := common.SoundSpeed(flux, gamma)
+			//dneum := c*(avg_lengthx+avg_lengthy) + math.Abs(un) + math.Abs(vn)
 			numer := cfl
 			dt[i][j] = numer / dneum
 			/**
-			if i == 159 && j == 0 {
+			if i == 163 && j == 0 {
 				fmt.Println("分子分母", numer, dneum)
 				fmt.Println("特征值", xlambda, ylambda)
 				fmt.Println("x均值,y均值", avg_lengthx, avg_lengthy)
